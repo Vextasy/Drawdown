@@ -130,7 +130,7 @@ func NewStatePension(name string, year0AnnualAmount int64, annualPctIncrease flo
 // NewSavingsAccount creates a savings account source.
 // InitialBalance is the balance at the start of the first year.
 // AnnualPctIncrease is the percentage increase per year. (For example, 2.0 for 2% increase per year).
-func NewSavingsAccount(name string, initialBalance int64, annualPctIncrease float64) *Source {
+func NewSavingsAccount(name string, initialBalance int64, annualPctIncrease *float64) *Source {
 	is := &Source{
 		Name: name,
 	}
@@ -140,7 +140,7 @@ func NewSavingsAccount(name string, initialBalance int64, annualPctIncrease floa
 		if year == 0 {
 			return
 		}
-		increasePct := annualPctIncrease / 100
+		increasePct := *annualPctIncrease / 100
 		is.setBalance(int64((1 + increasePct) * float64(is.balance)))
 	}
 	return is
@@ -149,7 +149,7 @@ func NewSavingsAccount(name string, initialBalance int64, annualPctIncrease floa
 // NewInvestmentAccount creates a fund or share investment account source.
 // InitialBalance is the balance at the start of the first year.
 // AnnualPctIncrease is the percentage growth per year. (For example, 2.0 for 2% growth per year).
-func NewInvestmentAccount(name string, initialBalance int64, annualPctIncrease float64) *Source {
+func NewInvestmentAccount(name string, initialBalance int64, annualPctIncrease *float64) *Source {
 	is := &Source{
 		Name: name,
 	}
@@ -162,7 +162,7 @@ func NewInvestmentAccount(name string, initialBalance int64, annualPctIncrease f
 		}
 
 		// Scale the balance up each year (apart for the first) by the annual percentage increase.
-		increasePct := annualPctIncrease / 100
+		increasePct := *annualPctIncrease / 100
 		is.setBalance(int64((1 + increasePct) * float64(is.balance)))
 	}
 	return is
@@ -176,31 +176,6 @@ func Upto(is *Source, upto int64) *Source {
 		return is.reduceBalance(min(is.balance, upto))
 	}
 	return nis
-}
-
-// But beware this cannot/should not be simple placed in the drawSequence because it may not be called if need == 0.
-// Perhaps create a new transferSequence which is called at the start of the year.
-func Transfer(upto *int64, to *Source, from ...*Source) *Source {
-	sources := Seq(upto, from...).Withdraw(*upto)
-	got := totalSourceAmount(sources)
-	to.Deposit(got)
-	return &Source{
-		Name: "Transfer to " + to.Name + " from " + strings.Join(incomeSourceNames(from), " + "),
-	}
-}
-
-// Return a new Source which, on withdrawal, will draw from source1 and source2 in the given percentages.
-// The percentages are expressed as, for example, 2.0 for 2%.
-func Split(is1 *Source, is2 *Source, pct1 int64, pct2 int64) *Source {
-	is := &Source{
-		Name: is1.Name + " + " + is2.Name,
-	}
-	is.makeWithdrawal = func(amount int64) []SourceAmount {
-		a1 := is1.Withdraw(amount * pct1 / 100)
-		a2 := is2.Withdraw(amount * pct2 / 100)
-		return append(a1, a2...)
-	}
-	return is
 }
 
 func Seq(upto *int64, iss ...*Source) *Source {
@@ -219,6 +194,31 @@ func Seq(upto *int64, iss ...*Source) *Source {
 			}
 		}
 		return sources
+	}
+	return is
+}
+
+// Transfer can be used as an action to move money between sources.
+func Transfer(upto *int64, to *Source, from ...*Source) *Source {
+	sources := Seq(upto, from...).Withdraw(*upto)
+	got := totalSourceAmount(sources)
+	to.Deposit(got)
+	//fmt.Println("Transfer", got, "to", to.Name, "from", strings.Join(incomeSourceNames(from), " + "))
+	return &Source{
+		Name: "Transfer to " + to.Name + " from " + strings.Join(incomeSourceNames(from), " + "),
+	}
+}
+
+// Return a new Source which, on withdrawal, will draw from source1 and source2 in the given percentages.
+// The percentages are expressed as, for example, 2.0 for 2%.
+func Split(is1 *Source, is2 *Source, pct1 int64, pct2 int64) *Source {
+	is := &Source{
+		Name: is1.Name + " + " + is2.Name,
+	}
+	is.makeWithdrawal = func(amount int64) []SourceAmount {
+		a1 := is1.Withdraw(amount * pct1 / 100)
+		a2 := is2.Withdraw(amount * pct2 / 100)
+		return append(a1, a2...)
 	}
 	return is
 }
