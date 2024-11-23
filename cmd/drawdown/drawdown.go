@@ -11,13 +11,13 @@ import (
 
 const (
 	Years             = 30
-	Year0AnnualIncome = 30000
+	Year0AnnualIncome = 35000
 
-	InvestmentGrowthRate     = 2.0  // 2%, 5%, 8%
-	SavingsGrowthRate        = 1.5  // 0.5%, 1.5%, 2.5%
-	AnnualInflationRate      = 2.2  // 2.0% or 2.2%
-	PlatformChargeRate       = 0.25 // The charge for using a platform as a percentage of the balance.
-	TaxBandAnnualPctIncrease = 2.2
+	InvestmentGrowthRate     = 3.5  // %
+	SavingsGrowthRate        = 3.5  // %
+	AnnualInflationRate      = 2.5  // %
+	PlatformChargeRate       = 0.25 // The % charge for using a platform as a percentage of the balance.
+	TaxBandAnnualPctIncrease = 0.5  // %
 )
 
 func main() {
@@ -62,7 +62,7 @@ func doSummary() {
 		panic(err)
 	}
 	defer file.Close()
-	fmt.Fprintf(file, "Investment Growth Rate,Savings Growth Rate,Annual Inflation Rate,Platform Charge Rate,Tax Band Annual Percentage Increase,Total Withdrawn,Tax Paid,Final Balance, Years Funded\n")
+	fmt.Fprintf(file, "Investment Growth Rate,Savings Growth Rate,Annual Inflation Rate,Platform Charge Rate,Tax Band Annual Percentage Increase,Total Withdrawn,Tax Paid,Final Balance,Final Year\n")
 
 	for _, igr := range []float64{0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 8.0} { // Investment Growth Rate
 		for _, sgr := range []float64{0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 8.0} { // Savings Growth Rate
@@ -78,7 +78,7 @@ func doSummary() {
 						})
 						transactions := s.Iterate(Years, Year0AnnualIncome)
 						summary := transactions.Summary()
-						fmt.Fprintf(file, "igr_%.2f, sgr_%.2f, air_%.2f, pcr_%.2f, tbi_%.2f, %d, %d, %d, %d\n", igr, sgr, air, pcr, tbi, summary.TotalWithdrawn, summary.TotalTaxPaid, summary.FinalBalance, summary.YearsFunded)
+						fmt.Fprintf(file, "igr_%.2f, sgr_%.2f, air_%.2f, pcr_%.2f, tbi_%.2f, %d, %d, %d, %d\n", igr, sgr, air, pcr, tbi, summary.TotalWithdrawn, summary.TotalTaxPaid, summary.FinalBalance, summary.FinalYear)
 					}
 				}
 			}

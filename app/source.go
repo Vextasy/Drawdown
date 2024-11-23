@@ -11,8 +11,8 @@ type SourceAmount struct {
 	Amount int64
 }
 
-// Source represents a source from which income can be drawn.
-// This might represent a savings account, an investment account, or a pension.
+// Source represents something from which income can be drawn.
+// This might be a savings account, an investment account, or a pension, for example.
 type Source struct {
 	Name           string
 	balance        int64                             // The amount of money currently in the source.

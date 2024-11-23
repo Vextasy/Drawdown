@@ -4,13 +4,13 @@ import (
 	"math"
 )
 
-// A TaxAccount records the amount of a currency on which tax has already been paid
-// and also the total amount of tax due on that amount.
+// A TaxAccount records the amount of a money on which tax has already been calculated.
+// and also the calculated total amount of tax due on that amount.
 type TaxAccount struct {
 	Name        string
 	regime      TaxRegime
-	taxedamount int64 // The amount of currency on which tax has already been paid.
-	tax         int64 // The total amount of tax that has been paid on that taxed amount.
+	taxedamount int64 // The amount of money on which tax has already been calculated.
+	tax         int64 // The total amount of tax that has been calculated to be due on that amount.
 }
 
 func NewTaxAccount(name string, taxRegime TaxRegime) *TaxAccount {
@@ -71,7 +71,7 @@ func (tr TaxRegime) TaxFreeAllowance() int64 {
 }
 
 // RateBound contains a rate and an upper bound on the amount for which the rate applies.
-// Normally a slice of RateBound is used to describe a tax regime.
+// A slice of RateBound is used to describe a tax regime.
 // In such a slice, subsequent upper values must be strictly increasing.
 // Rates are represented as a decimal percentage. For example, 10.1 for 10.1%.
 const HighUpperBound = math.MaxInt64

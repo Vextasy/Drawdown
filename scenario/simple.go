@@ -1,8 +1,6 @@
 package scenario
 
 import (
-	"fmt"
-
 	drawdown "github.com/vextasy/drawdown/app"
 )
 
@@ -14,19 +12,19 @@ func NewSimpleDrawScenario() *drawdown.DrawScenario {
 	// State Pension
 	const (
 		StatePensionYear0Amount       = 10000
-		StatePensionStartingYear      = 5
+		StatePensionStartingYear      = 1
 		StatePensionAnnualPctIncrease = 2.5
 
 		// Savings
-		SavingsInitialBalance = 80000
-		IsaInitialBalance     = 24000
+		SavingsInitialBalance = 40000
+		IsaInitialBalance     = 40000
 
 		// Pension
-		Pension1InitialBalance = 500000
-		Pension2InitialBalance = 250000
+		Pension1InitialBalance = 350000
+		Pension2InitialBalance = 150000
 
 		// Investments
-		GiaInitialBalance = 60000
+		GiaInitialBalance = 50000
 	)
 
 	// Sources
@@ -128,7 +126,7 @@ func NewSimpleDrawScenario() *drawdown.DrawScenario {
 	// and before any withdrawals are made.
 	actions := []func(year int, need int64, s *drawdown.DrawScenario){
 		func(year int, need int64, s *drawdown.DrawScenario) {
-			fmt.Println("year", year, "need", need)
+			//fmt.Println("year", year, "need", need)
 		},
 		func(year int, need int64, s *drawdown.DrawScenario) {
 			// Every year make the maximum annual ISA contribution from the savings accounts.
