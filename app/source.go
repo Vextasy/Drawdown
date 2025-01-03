@@ -14,12 +14,13 @@ type SourceAmount struct {
 // Source represents something from which income can be drawn.
 // This might be a savings account, an investment account, or a pension, for example.
 type Source struct {
-	Name           string
-	balance        int64                             // The amount of money currently in the source.
-	year           int                               // The current year (origin zero) - decisions might be based on this.
-	startYear      func(year int)                    // Called at the beginning of each year typically to set the opening balance (year origin is zero).
-	endYear        func(year int)                    // Called at the end of each year.
-	makeWithdrawal func(amount int64) []SourceAmount // nil, else it returns the amount withdrawn from the source.
+	Name              string
+	balance           int64                             // The amount of money currently in the source.
+	year              int                               // The current year (origin one) - decisions might be based on this.
+	hasPlatformCharge bool                              // the balance counts towards the platform charge.
+	startYear         func(year int)                    // Called at the beginning of each year typically to set the opening balance (year origin is zero).
+	endYear           func(year int)                    // Called at the end of each year.
+	makeWithdrawal    func(amount int64) []SourceAmount // nil, else it returns the amount withdrawn from the source.
 }
 
 // setBalance sets the source's balance to a given value.
@@ -32,6 +33,13 @@ func (is *Source) setBalance(amount int64) {
 
 func (is *Source) Balance() int64 {
 	return is.balance
+}
+
+func (is *Source) PlatformChargeBalance() int64 {
+	if is.hasPlatformCharge {
+		return is.balance
+	}
+	return 0
 }
 
 func (is *Source) reduceBalance(amount int64) []SourceAmount {
@@ -73,7 +81,7 @@ func (is *Source) Deposit(amount int64) {
 }
 
 // NewYear is called at the beginning of a year, typically to set the opening balance.
-// The year origin is zero.
+// The year origin is one.
 func (is *Source) StartYear(year int) {
 	is.year = year
 	if is.startYear == nil {
@@ -83,7 +91,7 @@ func (is *Source) StartYear(year int) {
 }
 
 // EndYear is called at the end of each year.
-// The year origin is zero.
+// The year origin is one.
 func (is *Source) EndYear(year int) {
 	if is.endYear == nil {
 		return
@@ -97,19 +105,20 @@ func (is *Source) IsEmpty() bool {
 }
 
 // NewStatePension creates a state pension source.
-// Year0AnnualAmount is the amount paid in year 0.
+// Year1AnnualAmount is the amount paid in year 1.
 // AnnualPctIncrease is the percentage increase per year. (For example, 2.0 for 2% increase per year)
 // StartingYear is the year that the state pension starts.
-func NewStatePension(name string, year0AnnualAmount int64, annualPctIncrease float64, startingYear int) *Source {
+func NewStatePension(name string, year1AnnualAmount int64, annualPctIncrease float64, startingYear int) *Source {
 	is := &Source{
-		Name: name,
+		Name:              name,
+		hasPlatformCharge: false,
 	}
 	// Set a new opening balance each year which is scaled up by the annual percentage increase.
 	is.startYear = func(year int) {
 		var newBalance int64
-		initialAnnualStatePension := year0AnnualAmount
+		initialAnnualStatePension := year1AnnualAmount
 		increasePct := annualPctIncrease / 100
-		newBalance = int64(math.Pow((1+increasePct), float64(year)) * float64(initialAnnualStatePension))
+		newBalance = int64(math.Pow((1+increasePct), float64(year-1)) * float64(initialAnnualStatePension))
 		if is.year < startingYear {
 			is.setBalance(0)
 		} else {
@@ -132,12 +141,13 @@ func NewStatePension(name string, year0AnnualAmount int64, annualPctIncrease flo
 // AnnualPctIncrease is the percentage increase per year. (For example, 2.0 for 2% increase per year).
 func NewSavingsAccount(name string, initialBalance int64, annualPctIncrease *float64) *Source {
 	is := &Source{
-		Name: name,
+		Name:              name,
+		hasPlatformCharge: true,
 	}
 	is.setBalance(initialBalance)
 	// Scale the balance up each year (apart for the first) by the annual percentage increase.
 	is.startYear = func(year int) {
-		if year == 0 {
+		if year == 1 {
 			return
 		}
 		increasePct := *annualPctIncrease / 100
@@ -151,13 +161,14 @@ func NewSavingsAccount(name string, initialBalance int64, annualPctIncrease *flo
 // AnnualPctIncrease is the percentage growth per year. (For example, 2.0 for 2% growth per year).
 func NewInvestmentAccount(name string, initialBalance int64, annualPctIncrease *float64) *Source {
 	is := &Source{
-		Name: name,
+		Name:              name,
+		hasPlatformCharge: true,
 	}
 	is.setBalance(initialBalance)
 	// Scale the balance up each year (apart for the first) by the annual percentage increase.
 	//lastOpeningBalance := initialBalance
 	is.startYear = func(year int) {
-		if year == 0 {
+		if year == 1 {
 			return
 		}
 

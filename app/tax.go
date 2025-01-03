@@ -88,7 +88,7 @@ func NewRateBound(upper int64, rate float64) RateBound {
 // TaxDue returns the amount of tax due for the additional amount 'a'
 // over an above the amount 'already' (which is assumed to have already been taxed).
 func (tr TaxRegime) TaxDue(a int64, already int64) int64 {
-	return int64(tr.taxDue(a+already) - tr.taxDue(already))
+	return tr.taxDue(a+already) - tr.taxDue(already)
 }
 
 // taxDue returns the amount of tax due on an amount in the given tax regime.

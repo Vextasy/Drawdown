@@ -48,7 +48,7 @@ func (s *DrawScenario) WithRates(r DrawRates) *DrawScenario {
 	return s
 }
 
-// A Transaction represents the situation, for a given source,  at the end of the year.
+// A Transaction represents the situation, for a given source, at the end of the year.
 // Withdrawals from a source may cause tax to be raised.
 // Tax raised may be paid by the same source, or a different source.
 // The Amount of a transaction includes any amount withdrawn to pay tax.
@@ -64,13 +64,13 @@ type Transaction struct {
 type DrawHistory []Transaction
 
 // Iterate returns a transaction for each combination of Source and increasing Year.
-func (s *DrawScenario) Iterate(years int, year0AnnualIncome int) DrawHistory {
+func (s *DrawScenario) Iterate(years int, year1AnnualIncome int) DrawHistory {
 
 	transactions := []Transaction{}
 
 	var unpaidTax int64 = 0
-	for year := 0; year < years; year++ {
-		var need int64 = int64(float64(year0AnnualIncome) * math.Pow(1+s.Rates.AnnualInflationRate/100, float64(year)))
+	for year := 1; year <= years; year++ {
+		var need int64 = int64(float64(year1AnnualIncome) * math.Pow(1+s.Rates.AnnualInflationRate/100, float64(year-1)))
 		need += unpaidTax
 		unpaidTax = 0
 		//fmt.Println("year", year, "need", need)
@@ -90,7 +90,7 @@ func (s *DrawScenario) Iterate(years int, year0AnnualIncome int) DrawHistory {
 		// Platform charges
 		balance := int64(0)
 		for _, source := range s.Sources {
-			balance += source.Balance()
+			balance += source.PlatformChargeBalance()
 		}
 		platformCharges := int64(float64(balance) * s.Rates.PlatformChargeRate / 100)
 		need += platformCharges
@@ -121,21 +121,27 @@ func (s *DrawScenario) Iterate(years int, year0AnnualIncome int) DrawHistory {
 		}
 		// Pay tax
 		taxWithdrawn := make(map[*Source]int64) // Amount withdrawn from each source this year to pay tax.
-		for _, source := range s.TaxPaymentSequence {
-			sas := source.Withdraw(taxToPay) // Source might split withdrawal between multiple sub-sources.
-			for _, sa := range sas {
-				taxToPay -= sa.Amount
-				withdrawn[sa.Source] += sa.Amount
-				taxWithdrawn[sa.Source] += sa.Amount
-				// If paying tax from a taxable source, calculate the additional tax raised on that withdrawal.
-				ta, taxable := s.TaxAccounts[sa.Source]
-				if taxable {
-					unpaidTax += ta.TaxDue(sa.Amount)
+		payTaxNextYear := true
+		if payTaxNextYear {
+			unpaidTax = taxToPay
+		} else {
+
+			for _, source := range s.TaxPaymentSequence {
+				sas := source.Withdraw(taxToPay) // Source might split withdrawal between multiple sub-sources.
+				for _, sa := range sas {
+					taxToPay -= sa.Amount
+					withdrawn[sa.Source] += sa.Amount
+					taxWithdrawn[sa.Source] += sa.Amount
+					// If paying tax from a taxable source, calculate the additional tax raised on that withdrawal.
+					ta, taxable := s.TaxAccounts[sa.Source]
+					if taxable {
+						unpaidTax += ta.TaxDue(sa.Amount)
+					}
 				}
 			}
-		}
-		if taxToPay > 0 {
-			fmt.Println("Some tax unpaid:", taxToPay)
+			if taxToPay > 0 {
+				fmt.Println("Some tax unpaid:", taxToPay)
+			}
 		}
 
 		// End of year.
